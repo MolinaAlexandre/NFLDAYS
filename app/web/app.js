@@ -445,6 +445,13 @@ function updateScene(time) {
 
 // ---------- cameras ----------
 let tween = null, camJump = false;
+// lead: yards ahead of the ball (downfield) to aim at; lateral: share of the ball's sideline movement followed
+const TRACK = {
+  broadcast: { lead: 0, lateral: 0.45, base: 2 },
+  all22: { lead: 4, lateral: 0, base: 0 },
+  endzone: { lead: -3, lateral: 0.3, base: 0 },
+  top: { lead: 0, lateral: 0.8, base: 0 },
+};
 function camPreset(mode) {
   const play = S.play; if (!play) return null;
   const s = play.dir === 'right' ? 1 : -1, los = play.los ?? 60, cy = -FIELD_W / 2;
@@ -478,10 +485,20 @@ function updateCamera(dt, pos) {
     if (tween.t >= 1) tween = null;
   }
   if (!pos) return;
-  // TV camera pans with the ball once it leaves the pocket (incl. the computed phase)
-  if (S.cam === 'broadcast' && !tween && S.play && S.f > S.play.end - 1) {
-    const b = pos.get(-1);
-    if (b) { const dx = (b.x - controls.target.x) * (1 - Math.exp(-dt * 2)); camera.position.x += dx; controls.target.x += dx; }
+  // Broadcast-style views track the ball (aiming slightly ahead of it) for the whole play, including the
+  // computed phase. Camera and target move together, so any orbit the user applied is preserved.
+  const track = TRACK[S.cam];
+  if (track && !tween && S.play) {
+    const ballEnt = S.play.ents.find((e) => e.id === -1);
+    if (ballEnt) {
+      const b = sample(ballEnt, S.f), ahead = sample(ballEnt, Math.min(S.play.n - 1, S.f + 3));
+      const s = S.play.dir === 'right' ? 1 : -1, cy = -FIELD_W / 2;
+      const fx = ahead.x + s * track.lead, fz = -ahead.y;
+      const k = 1 - Math.exp(-dt * 4);
+      const dx = (fx - controls.target.x) * k, dz = (track.base + cy + (fz - cy) * track.lateral - controls.target.z) * k;
+      camera.position.x += dx; controls.target.x += dx;
+      camera.position.z += dz; controls.target.z += dz;
+    }
   }
   const id = S.cam === 'qb' ? actors.find((a) => a.ent.r === 'Pass')?.ent.id : S.cam === 'follow' ? S.selected : null;
   const p = id != null && pos.get(id);
@@ -948,6 +965,8 @@ function loop() {
   requestAnimationFrame(loop);
 }
 camera.position.set(60, 40, 40); controls.target.set(60, 0, -26);
+// debug handle (inspection from the console / automated checks)
+window.__pr = { S, camera, controls, get actors() { return actors; }, get tween() { return tween; } };
 syncPlayBtn();
 loop();
 init().catch((e) => { console.error(e); setLoading('Impossible de charger les données.'); });
