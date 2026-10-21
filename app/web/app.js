@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { extendPlay, ballHeight } from './sim.js';
 import { kitFor, KIT_SLOTS } from './kits.js';
+import { makeRig, animate, makeViewModel } from './anim.js';
 
 // ---------- constants ----------
 const HZ = 10;
@@ -174,6 +175,22 @@ const GEO = {
   ring: new THREE.RingGeometry(0.6, 0.78, 32),
 };
 
+// QB POV: his right hand + the ball, attached to the camera
+const viewModel = makeViewModel(GEO.ball);
+viewModel.group.visible = false;
+camera.add(viewModel.group); scene.add(camera);
+
+// QB possession: from the snap until the release on passes, or while the ball stays on him (sacks, scrambles)
+const THROWS = new Set(['C', 'I', 'IN']);
+function qbHold(f) {
+  const play = S.play, rel = play.end - 1, thrown = THROWS.has(play.sim?.kind);
+  const throwT = thrown ? (f - rel) / HZ : null;
+  const qbA = actors.find((a) => a.ent.r === 'Pass'), ballA = actors.find((a) => a.ent.id === -1);
+  if (!qbA || !ballA || f < play.snap - 1 || (thrown && f > rel)) return { holding: false, throwT };
+  const q = sample(qbA.ent, f), b = sample(ballA.ent, f);
+  return { holding: Math.hypot(q.x - b.x, q.y - b.y) < 1.5, throwT };
+}
+
 function makePlayer(kit) {
   if (S.playerModel) {
     const o = S.playerModel.clone(true);
@@ -203,7 +220,7 @@ function buildActors(play, meta, game) {
   const beaten = new Map(meta.beaten.map((b) => [b.b, b.k]));
   const credited = new Map(meta.credits.map((c) => [c.p, c.k]));
   for (const ent of play.ents) {
-    let obj, label = null;
+    let obj, label = null, rig = null;
     if (ent.id === -1) {
       obj = new THREE.Mesh(GEO.ball, new THREE.MeshStandardMaterial({ color: '#7a3e12', roughness: 0.5 }));
       obj.scale.set(1.5, 0.9, 0.9); obj.castShadow = true;
@@ -211,6 +228,8 @@ function buildActors(play, meta, game) {
       const kit = kitFor(ent.t, ent.t === game.homeTeamAbbr);
       obj = makePlayer(kit);
       obj.userData.nflId = ent.id;
+      rig = S.playerModel ? makeRig(obj, ent) : null;
+      if (ent.r === 'Pass') viewModel.setKit(kit);
       label = numberSprite(ent.j, kit.num, kit.jersey);
       obj.add(label);
     }
@@ -222,7 +241,7 @@ function buildActors(play, meta, game) {
       ring.rotation.x = -Math.PI / 2; playerRoot.add(ring);
     }
     playerRoot.add(obj);
-    actors.push({ ent, obj, ring, label });
+    actors.push({ ent, obj, ring, label, rig });
   }
 }
 
@@ -254,6 +273,8 @@ function updateScene() {
   const play = S.play; if (!play) return;
   const f = S.f;
   const pos = new Map();
+  const qbA = actors.find((a) => a.ent.r === 'Pass'), ballA = actors.find((a) => a.ent.id === -1);
+  const hold = qbHold(f);
   for (const a of actors) {
     const p = sample(a.ent, f); pos.set(a.ent.id, p);
     if (a.ent.id === -1) {
@@ -264,10 +285,18 @@ function updateScene() {
       a.obj.rotation.y = Math.PI / 2 - p.o * Math.PI / 180;
       if (a.label) a.label.visible = S.layers.labels && S.cam !== 'qb';
       a.obj.visible = !(S.cam === 'qb' && a.ent.r === 'Pass');
+      if (a.rig) animate(a.rig, a.ent, f, p, { pre: f < play.snap - 1, holding: a === qbA && hold.holding, throwT: a === qbA ? hold.throwT : null });
     }
     if (a.ring) a.ring.position.copy(v3(p.x, p.y, 0.03));
   }
-  const qbA = actors.find((a) => a.ent.r === 'Pass');
+  // the ball sits in the QB's right hand while he holds it (hidden in his own POV: the view model shows it)
+  if (hold.holding && qbA.rig && ballA) {
+    qbA.obj.updateMatrixWorld(true);
+    ballA.obj.position.copy(qbA.rig.forearm_R.localToWorld(qbA.rig.hand.clone()));
+  }
+  if (ballA) ballA.obj.visible = !(S.cam === 'qb' && hold.holding);
+  viewModel.group.visible = S.cam === 'qb' && hold.holding;
+  if (viewModel.group.visible) viewModel.update(hold.throwT, pos.get(qbA.ent.id).s, clock.elapsedTime);
   const qb = qbA && pos.get(qbA.ent.id);
   const computed = f > play.nReal - 1;
   setGhost(computed);
@@ -373,7 +402,10 @@ function updateCamera(dt, pos) {
   const fa = facing(p.o);
   if (S.cam === 'qb') {
     tmpPos.copy(v3(p.x, p.y, 1.85));
-    tmpTgt.copy(v3(p.x + fa.x * 20, p.y + fa.y * 20, 1.0));
+    // after the release the QB keeps his eyes on the throw: the target spot, then the ball (carrier)
+    const s = S.play.sim, rel = S.play.end - 1, b = pos.get(-1);
+    if (S.f > rel && THROWS.has(s?.kind)) tmpTgt.copy(S.f < s.catchF ? v3(s.C.x, s.C.y, 1.3) : v3(b.x, b.y, 1.0));
+    else tmpTgt.copy(v3(p.x + fa.x * 20, p.y + fa.y * 20, 1.0));
   } else {
     tmpPos.copy(v3(p.x - fa.x * 7, p.y - fa.y * 7, 4.5));
     tmpTgt.copy(v3(p.x + fa.x * 6, p.y + fa.y * 6, 1));

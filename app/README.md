@@ -21,7 +21,9 @@ Lien direct vers une action, une caméra et un instant : `http://localhost:8765/
 
 - `pipeline.py` : chargement du tracking et du scouting PFF, métriques (temps avant la passe, Pocket Clock, surface de la poche, distance minimale d'un rusher), tags et classements. Sorties : `web/data/index.json` et `web/data/games/<gameId>.json`.
 - `web/` : viewer Three.js (WebGL), sans étape de build.
-- Modèle Blender facultatif : déposer `web/models/player.glb` (1 unité = 1 yard, pieds à l'origine, regard vers +X ; matériaux nommés `jersey` et `helmet` pour la recoloration par équipe). Il remplace automatiquement les formes simples.
+- Modèle joueur : `web/models/player.glb` (source `blender/player.blend`, 1 unité = 1 yard, pieds à l'origine, regard vers +X). Il est articulé (`hips` > `torso` > `upperarm_*` > `forearm_*`, `hips` > `thigh_*` > `shin_*`) et ses matériaux (`jersey`, `helmet`, `facemask`, `stripe`, `trim`, `pants`, `socks`) sont recolorés par équipe avec `web/kits.js` (tenues 2021, domicile / extérieur). Sans le fichier, le viewer revient aux formes simples.
+- Animations procédurales (`web/anim.js`) : foulée calée sur la distance parcourue dans le tracking (donc exacte en pause et au scrubbing, inversée en backpedal), postures selon le rôle PFF (bloqueur, rusher, receveur, couverture), QB qui tient le ballon puis arme et lance autour de l'événement `pass_forward`. Le ballon reste dans la main du QB tant qu'il le porte.
+- Vue « Yeux du QB » : main et ballon au premier plan jusqu'au lâcher, puis la caméra se tourne vers le point visé et suit le ballon jusqu'à la fin de l'action.
 
 ## Fin d'action calculée (hors tracking)
 
