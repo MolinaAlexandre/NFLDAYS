@@ -89,7 +89,10 @@ export function extendPlay(play, meta, players) {
     const vc = velOf(carrier);
     if (res === 'IN') {
       const fwd = -sign; // interceptor runs the other way
-      F = clampField({ x: C.x + fwd * 6, y: C.y + vc.y * 0.4 });
+      // return yardage from the description ("INTERCEPTED by X at ... X for 39 yards, TOUCHDOWN")
+      const after = desc.slice(desc.indexOf('INTERCEPTED')), rm = after.match(/for (-?\d+) yards?/);
+      const ret = /for no gain/.test(after) ? 0 : rm ? +rm[1] : 6;
+      F = clampField({ x: td ? (fwd > 0 ? 111 : 9) : C.x + fwd * ret, y: C.y + vc.y * 0.4 });
     } else {
       const fx = td ? (sign > 0 ? 111 : 9) : play.los + sign * yds;
       if ((fx - C.x) * sign < 0) C = { x: fx, y: C.y }; // catch depth cannot exceed the total gain

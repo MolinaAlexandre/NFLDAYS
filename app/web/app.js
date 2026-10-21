@@ -384,6 +384,9 @@ function updateScene(time) {
   const pos = new Map();
   const qbA = actors.find((a) => a.ent.r === 'Pass'), ballA = actors.find((a) => a.ent.id === -1);
   const hold = qbHold(f);
+  // after a (computed) catch or interception the ball carrier holds the ball like the QB does
+  const sim = play.sim, carrierHolds = !!sim && (sim.kind === 'C' || sim.kind === 'IN') && sim.carrier != null && f >= sim.catchF;
+  const carrierA = carrierHolds ? actorMap.get(sim.carrier) : null;
   for (const a of actors) {
     const p = sample(a.ent, f); pos.set(a.ent.id, p);
     if (a.ent.id === -1) {
@@ -400,7 +403,7 @@ function updateScene(time) {
         a.label.material.opacity = Math.max(0, Math.min(1, (d - 2.5) / 3));
       }
       a.obj.visible = !(S.cam === 'qb' && a.ent.r === 'Pass');
-      if (a.rig) animate(a.rig, a.ent, f, p, { pre: f < play.snap - 1, holding: a === qbA && hold.holding, throwT: a === qbA ? hold.throwT : null });
+      if (a.rig) animate(a.rig, a.ent, f, p, { pre: f < play.snap - 1, holding: (a === qbA && hold.holding) || a === carrierA, throwT: a === qbA ? hold.throwT : null });
     }
     if (a.ring) a.ring.position.copy(v3(p.x, p.y, 0.03));
   }
@@ -408,6 +411,10 @@ function updateScene(time) {
   if (hold.holding && qbA.rig && ballA) {
     qbA.obj.updateMatrixWorld(true);
     ballA.obj.position.copy(qbA.rig.forearm_R.localToWorld(qbA.rig.hand.clone()));
+  }
+  if (carrierA?.rig && ballA) {
+    carrierA.obj.updateMatrixWorld(true);
+    ballA.obj.position.copy(carrierA.rig.forearm_R.localToWorld(carrierA.rig.hand.clone()));
   }
   if (ballA) ballA.obj.visible = !(S.cam === 'qb' && hold.holding);
   viewModel.group.visible = S.cam === 'qb' && hold.holding;
