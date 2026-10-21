@@ -12,7 +12,7 @@ for f in web/data/index.json web/data/games/*.json; do
 done
 
 echo "staging site in $OUT"
-cp web/index.html web/app.js web/sim.js "$OUT/"
+cp web/index.html web/*.js "$OUT/"
 [ -d web/models ] && cp -r web/models "$OUT/"
 mkdir -p "$OUT/data/games"
 cp web/data/index.json.gz "$OUT/data/"
