@@ -55,7 +55,7 @@ export function extendPlay(play, meta, players) {
     carrier = qb; method = 'QB (scramble)'; C = at(qb, L);
   } else {
     const intM = desc.match(/INTERCEPTED by ([A-Z][\w'-]*\.\s?[A-Z][\w'.-]*(?: [A-Z][\w'-]+)?)/);
-    const toM = desc.match(/pass(?: incomplete)?(?: (?:short|deep))?(?: (?:left|middle|right))? to ([A-Z][\w'-]*\.\s?[A-Z][\w'.-]*(?: [A-Z][\w'-]+)?)/);
+    const toM = desc.match(/pass(?: incomplete)?(?: (?:short|deep))?(?: (?:left|middle|right))? (?:to|intended for) ([A-Z][\w'-]*\.\s?[A-Z][\w'.-]*(?: [A-Z][\w'-]+)?)/);
     if (res === 'IN' && intM) { abbr = intM[1]; carrier = matchName(abbr, defense, players); }
     else if (toM) { abbr = toM[1]; carrier = matchName(abbr, offense.filter((e) => e !== qb), players); }
     if (carrier) method = `description « ${abbr} »`;
@@ -95,11 +95,12 @@ export function extendPlay(play, meta, players) {
       if ((fx - C.x) * sign < 0) C = { x: fx, y: C.y }; // catch depth cannot exceed the total gain
       F = clampField({ x: fx, y: C.y + vc.y * 0.5 });
     }
-    D = Math.max(0.6, len(F.x - C.x, F.y - C.y) / 6.5);
+    const run = len(F.x - C.x, F.y - C.y);
+    D = Math.max(0.6, run / (run > 20 ? 8.5 : 6.5)); // breakaways run at top speed
   }
   const hold = 1.0;
   const total = T + D + hold;
-  const K = Math.min(80, Math.round(total * HZ));
+  const K = Math.min(160, Math.round(total * HZ));
   const catchF = L + T * HZ, tackleF = L + (T + D) * HZ;
 
   // carrier path (Hermite curve from catch to final spot, initial tangent = receiver velocity)
