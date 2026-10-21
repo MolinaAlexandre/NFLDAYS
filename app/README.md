@@ -17,6 +17,14 @@ cd web && python3 -m http.server 8765                       # http://localhost:8
 
 Lien direct vers une action, une caméra et un instant : `http://localhost:8765/#g=2021091200&p=2631&cam=qb&t=2.8`
 
+## Mettre en ligne (GitHub Pages, gratuit)
+
+```bash
+./app/deploy.sh    # gzip des données (206 Mo -> 71 Mo) + push du site sur la branche gh-pages
+```
+Une seule fois, dans les Settings du repo, section Pages : Source « Deploy from a branch », branche `gh-pages`, dossier `/ (root)`.
+Le site est ensuite servi sur `https://molinaalexandre.github.io/NFLDAYS/`.
+
 ## Structure
 
 - `pipeline.py` : chargement du tracking et du scouting PFF, métriques (temps avant la passe, Pocket Clock, surface de la poche, distance minimale d'un rusher), tags et classements. Sorties : `web/data/index.json` et `web/data/games/<gameId>.json`.

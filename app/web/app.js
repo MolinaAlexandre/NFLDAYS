@@ -534,8 +534,18 @@ function infoPanel(meta) {
 }
 
 // ---------- loading plays ----------
+// Data is shipped pre-gzipped (.json.gz) for static hosting; falls back to plain .json.
+// Handles hosts that serve the .gz raw and hosts that already decode it (Content-Encoding).
+async function fetchJSON(path) {
+  const r = await fetch(`${path}.gz`);
+  if (!r.ok) return fetch(path).then((x) => x.json());
+  const buf = new Uint8Array(await r.arrayBuffer());
+  if (buf[0] !== 0x1f || buf[1] !== 0x8b) return JSON.parse(new TextDecoder().decode(buf));
+  const stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return new Response(stream).json();
+}
 async function loadGame(gid) {
-  if (!S.gameCache.has(gid)) S.gameCache.set(gid, fetch(`data/games/${gid}.json`).then((r) => r.json()));
+  if (!S.gameCache.has(gid)) S.gameCache.set(gid, fetchJSON(`data/games/${gid}.json`));
   return S.gameCache.get(gid);
 }
 async function openPlay(meta) {
@@ -610,7 +620,7 @@ async function init() {
   $('tags').innerHTML = TAGS.map(([k, l]) => `<button class="chip" data-tag="${k}">${l}</button>`).join('');
   $('tags').querySelectorAll('.chip').forEach((b) => (b.onclick = () => { S.tags.has(b.dataset.tag) ? S.tags.delete(b.dataset.tag) : S.tags.add(b.dataset.tag); b.classList.toggle('on'); renderList(); }));
 
-  const idx = await fetch('data/index.json').then((r) => r.json());
+  const idx = await fetchJSON('data/index.json');
   S.index = idx; S.players = idx.players;
   for (const g of idx.games) S.games[g.gameId] = g;
   for (const p of idx.plays) {
