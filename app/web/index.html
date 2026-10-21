@@ -200,13 +200,13 @@
   @keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(192, 132, 252, 0); } 100% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0); } }
 
   /* ---------- video-game style event banner ---------- */
-  #banner { position: absolute; left: 0; right: 0; top: 34%; display: grid; place-items: center; pointer-events: none; z-index: 6; }
-  #banner b { font: italic 800 clamp(56px, 9vw, 132px)/1 var(--display); letter-spacing: 3px; text-transform: uppercase; color: #fff;
-    padding: 6px 48px 2px; transform: skewX(-10deg); background: var(--bc, #ff4d4f);
-    box-shadow: 0 0 0 4px rgba(255,255,255,.9), 0 18px 60px rgba(0,0,0,.55), 0 0 80px var(--bc, #ff4d4f);
+  #banner { position: absolute; left: 0; right: 0; top: 118px; display: grid; place-items: center; pointer-events: none; z-index: 6; }
+  #banner b { font: italic 800 clamp(30px, 3.6vw, 52px)/1 var(--display); letter-spacing: 2px; text-transform: uppercase; color: #fff;
+    padding: 4px 22px 1px; transform: skewX(-10deg); background: var(--bc, #ff4d4f);
+    box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 10px 30px rgba(0,0,0,.5), 0 0 40px var(--bc, #ff4d4f);
     text-shadow: 0 4px 0 rgba(0,0,0,.35); opacity: 0; }
-  #banner small { display: block; margin-top: 14px; font: 700 15px/1 Inter; letter-spacing: 2px; text-transform: uppercase; color: #fff;
-    background: rgba(0,0,0,.55); padding: 6px 12px; border-radius: 6px; opacity: 0; }
+  #banner small { display: block; margin-top: 8px; font: 700 11.5px/1 Inter; letter-spacing: 1.5px; text-transform: uppercase; color: #fff;
+    background: rgba(0,0,0,.55); padding: 4px 9px; border-radius: 5px; opacity: 0; }
   #banner.go b { animation: bannerIn 2.2s cubic-bezier(.2,1.4,.4,1) forwards; }
   #banner.go small { animation: bannerSub 2.2s ease forwards; }
   @keyframes bannerIn {
