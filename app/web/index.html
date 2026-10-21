@@ -199,6 +199,25 @@
     box-shadow: 0 0 0 0 rgba(192, 132, 252, .7); animation: pulse 1.4s infinite; vertical-align: 1px; }
   @keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(192, 132, 252, 0); } 100% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0); } }
 
+  /* ---------- video-game style event banner ---------- */
+  #banner { position: absolute; left: 0; right: 0; top: 34%; display: grid; place-items: center; pointer-events: none; z-index: 6; }
+  #banner b { font: italic 800 clamp(56px, 9vw, 132px)/1 var(--display); letter-spacing: 3px; text-transform: uppercase; color: #fff;
+    padding: 6px 48px 2px; transform: skewX(-10deg); background: var(--bc, #ff4d4f);
+    box-shadow: 0 0 0 4px rgba(255,255,255,.9), 0 18px 60px rgba(0,0,0,.55), 0 0 80px var(--bc, #ff4d4f);
+    text-shadow: 0 4px 0 rgba(0,0,0,.35); opacity: 0; }
+  #banner small { display: block; margin-top: 14px; font: 700 15px/1 Inter; letter-spacing: 2px; text-transform: uppercase; color: #fff;
+    background: rgba(0,0,0,.55); padding: 6px 12px; border-radius: 6px; opacity: 0; }
+  #banner.go b { animation: bannerIn 2.2s cubic-bezier(.2,1.4,.4,1) forwards; }
+  #banner.go small { animation: bannerSub 2.2s ease forwards; }
+  @keyframes bannerIn {
+    0% { opacity: 0; transform: skewX(-10deg) scale(2.4); filter: blur(6px); }
+    12% { opacity: 1; transform: skewX(-10deg) scale(.94); filter: blur(0); }
+    20% { transform: skewX(-10deg) scale(1.04); }
+    28%, 78% { opacity: 1; transform: skewX(-10deg) scale(1); }
+    100% { opacity: 0; transform: skewX(-10deg) scale(1.08) translateY(-20px); }
+  }
+  @keyframes bannerSub { 0%, 15% { opacity: 0; transform: translateY(10px); } 28%, 78% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
   /* ---------- bottom dock ---------- */
   #bottom { left: 14px; right: 14px; bottom: 14px; padding: 10px 14px 8px; }
   #controls { display: flex; align-items: center; gap: 8px; }
@@ -324,6 +343,7 @@
       </div>
     </div>
 
+    <div id="banner"><div style="text-align:center"><b id="bannerText"></b><small id="bannerSub"></small></div></div>
     <div class="overlay" id="simBadge">Phase CALCULÉE · hors tracking</div>
     <div class="overlay" id="info"></div>
 

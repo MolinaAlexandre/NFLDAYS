@@ -782,6 +782,32 @@ function infoPanel(meta) {
   $('howto').onclick = openGuide;
 }
 
+// ---------- event banners (SACK / INTERCEPTION / TOUCHDOWN) ----------
+let banners = [], lastF = 0;
+function buildBanners(play, meta) {
+  const ev = (names) => play.events.find(([, e]) => names.includes(e))?.[0];
+  const out = [], sim = play.sim;
+  if (meta.res === 'S') {
+    const f = ev(['qb_sack', 'qb_strip_sack']) ?? play.end;
+    const by = meta.credits.find((c) => c.k === 'sack')?.p ?? meta.pressureBy;
+    out.push({ f: f - 1, text: 'SACK', sub: by ? pname(by) : `${meta.yds} yd`, color: '#ff3b30' });
+  }
+  if (sim?.kind === 'IN') out.push({ f: sim.catchF, text: 'INTERCEPTION', sub: sim.carrier ? pname(sim.carrier) : '', color: '#2563eb' });
+  if (sim?.td && sim.F) out.push({ f: sim.tackleF, text: sim.kind === 'IN' ? 'PICK SIX' : 'TOUCHDOWN', sub: sim.carrier ? `${pname(sim.carrier)} · ${Math.abs(meta.yds ?? 0)} yd` : '', color: sim.kind === 'IN' ? '#7c3aed' : '#16a34a' });
+  banners = out;
+}
+function showBanner(b) {
+  const el = $('banner');
+  $('bannerText').textContent = b.text; $('bannerSub').textContent = b.sub; $('bannerSub').style.display = b.sub ? '' : 'none';
+  el.style.setProperty('--bc', b.color);
+  el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+}
+function checkBanners(f) {
+  // fire when playback crosses the event frame going forward (not when scrubbing backwards)
+  if (f > lastF && f - lastF < 3) for (const b of banners) if (lastF < b.f && f >= b.f) showBanner(b);
+  lastF = f;
+}
+
 // ---------- loading plays ----------
 // Data is shipped pre-gzipped (.json.gz) for static hosting; falls back to plain .json.
 // Handles hosts that serve the .gz raw and hosts that already decode it (Content-Encoding).
@@ -817,6 +843,7 @@ async function openPlay(meta, opts = {}) {
   losLine.visible = fdLine.visible = play.los != null;
   S.f = Math.max(0, play.snap - 6); S.playing = true; syncPlayBtn();
   drawMarks(); infoPanel(meta);
+  buildBanners(S.play, meta); lastF = S.f; $('banner').classList.remove('go');
   if (opts.follow === 'pressure' && meta.pressureBy) selectPlayer(meta.pressureBy);
   const cam = opts.cam ?? (S.cam === 'follow' && S.selected == null ? 'broadcast' : S.cam);
   setCam(cam, !opts.instant);
@@ -987,6 +1014,7 @@ function resize() {
   const infoW = info.offsetParent && !info.classList.contains('min') ? info.offsetWidth + 14 : 0;
   const top = tools.offsetTop + tools.offsetHeight, bottom = dock.offsetHeight + 14;
   const ox = Math.round(infoW / 2), oy = Math.round((bottom - top) / 2);
+  $('banner').style.right = `${infoW}px`;
   const key = `${w}x${h}:${ox},${oy}`;
   if (key !== viewKey) { viewKey = key; camera.setViewOffset(w, h, ox, oy, w, h); camera.updateProjectionMatrix(); }
 }
@@ -1004,6 +1032,7 @@ function loop() {
     $('time').firstElementChild.textContent = `${t > 0 ? '+' : ''}${t.toFixed(1)} s`;
     $('time').lastElementChild.textContent = t < 0 ? 'avant snap' : computed ? 'calculé' : 'après snap';
     $('time').classList.toggle('sim', computed);
+    checkBanners(S.f);
     const r = updateScene(clock.elapsedTime);
     updateCamera(dt, r?.pos);
     drawChart();
