@@ -447,10 +447,10 @@ function updateScene(time) {
 let tween = null, camJump = false;
 // lead: yards ahead of the ball (downfield) to aim at; lateral: share of the ball's sideline movement followed
 const TRACK = {
-  broadcast: { lead: 0, lateral: 0.45, base: 2 },
-  all22: { lead: 4, lateral: 0, base: 0 },
-  endzone: { lead: -3, lateral: 0.3, base: 0 },
-  top: { lead: 0, lateral: 0.8, base: 0 },
+  broadcast: { lead: 0, lateral: 0.7, base: 2 },
+  all22: { lead: 4, lateral: 0.5, base: 0 },
+  endzone: { lead: -3, lateral: 0.5, base: 0 },
+  top: { lead: 0, lateral: 0.9, base: 0 },
 };
 function camPreset(mode) {
   const play = S.play; if (!play) return null;
@@ -781,6 +781,7 @@ async function openPlay(meta, opts = {}) {
   if (opts.follow === 'pressure' && meta.pressureBy) selectPlayer(meta.pressureBy);
   const cam = opts.cam ?? (S.cam === 'follow' && S.selected == null ? 'broadcast' : S.cam);
   setCam(cam, !opts.instant);
+  if (cam === 'free') { const p = camPreset('broadcast'); tween = { from: camera.position.clone(), fromT: controls.target.clone(), ...p, t: opts.instant ? 1 : 0 }; }
   document.querySelectorAll('.item').forEach((el) => el.classList.toggle('active', el.dataset.k === `${meta.g}_${meta.p}`));
   history.replaceState(null, '', `#g=${meta.g}&p=${meta.p}${opts.keepHash ? location.hash.match(/&cam=.*/)?.[0] ?? '' : ''}`);
 }
@@ -936,11 +937,19 @@ for (const el of [document.querySelector('main'), $('tools'), $('bottom')]) ro.o
 
 // ---------- loop ----------
 const clock = new THREE.Clock();
+let viewKey = '';
 function resize() {
   const w = canvas.clientWidth, h = canvas.clientHeight;
   if (canvas.width !== Math.floor(w * renderer.getPixelRatio()) || canvas.height !== Math.floor(h * renderer.getPixelRatio())) {
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   }
+  // shift the projection centre to the middle of the area not covered by the info panel, toolbar and dock
+  const info = $('info'), tools = $('tools'), dock = $('bottom');
+  const infoW = info.offsetParent && !info.classList.contains('min') ? info.offsetWidth + 14 : 0;
+  const top = tools.offsetTop + tools.offsetHeight, bottom = dock.offsetHeight + 14;
+  const ox = Math.round(infoW / 2), oy = Math.round((bottom - top) / 2);
+  const key = `${w}x${h}:${ox},${oy}`;
+  if (key !== viewKey) { viewKey = key; camera.setViewOffset(w, h, ox, oy, w, h); camera.updateProjectionMatrix(); }
 }
 function loop() {
   const dt = Math.min(0.1, clock.getDelta());
