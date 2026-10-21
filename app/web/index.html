@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pocket Replay 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22ee; --panel-solid: #161b22; --line: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #f0883e; --danger: #f85149;
+    --warn: #d29922; --ok: #3fb950; --blue: #58a6ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: Inter, system-ui, sans-serif; font-size: 13px; overflow: hidden; }
+  #app { display: grid; grid-template-columns: 340px 1fr; height: 100%; }
+  aside { background: var(--panel-solid); border-right: 1px solid var(--line); display: flex;
+    flex-direction: column; min-height: 0; }
+  aside header { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 17px; margin: 0 0 2px; font-weight: 800; letter-spacing: -.3px; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 12px; }
+  .filters { padding: 10px 16px; display: grid; gap: 8px; border-bottom: 1px solid var(--line); }
+  select, input[type=search] { width: 100%; background: var(--bg); color: var(--text);
+    border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font: inherit; }
+  .row { display: flex; gap: 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip { border: 1px solid var(--line); background: transparent; color: var(--muted);
+    border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 11px; cursor: pointer; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+  #count { color: var(--muted); font-size: 11px; }
+  #list { overflow-y: auto; flex: 1; min-height: 0; }
+  .item { padding: 9px 16px; border-bottom: 1px solid #21262d; cursor: pointer; }
+  .item:hover { background: #1f2630; }
+  .item.active { background: #2d1f12; border-left: 3px solid var(--accent); padding-left: 13px; }
+  .item .top { display: flex; justify-content: space-between; font-weight: 600; }
+  .item .desc { color: var(--muted); font-size: 11.5px; margin-top: 3px; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tag { display: inline-block; font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+    margin: 4px 3px 0 0; background: #30363d; color: var(--text); }
+  .tag.SACK, .tag.INT { background: var(--danger); color: #fff; }
+  .tag.HIT, .tag.PRESSURE { background: var(--accent); color: #000; }
+  .tag.TD, .tag.BIG { background: var(--ok); color: #000; }
+  main { position: relative; min-width: 0; }
+  canvas#gl { display: block; width: 100%; height: 100%; }
+  .overlay { position: absolute; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; backdrop-filter: blur(6px); }
+  #info { top: 12px; right: 12px; width: 330px; padding: 12px 14px; max-height: calc(100% - 190px); overflow-y: auto; }
+  #info h2 { font-size: 14px; margin: 0 0 4px; }
+  #info .desc { color: var(--muted); font-size: 12px; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+  .metric { background: #0d1117aa; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
+  .metric b { display: block; font-size: 18px; font-weight: 800; }
+  .metric small { color: var(--muted); font-size: 10.5px; }
+  .section { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin: 10px 0 5px; }
+  .link { color: var(--blue); cursor: pointer; }
+  .link:hover { text-decoration: underline; }
+  .duel { font-size: 12px; margin: 3px 0; }
+  .duel .k { font-weight: 700; color: var(--danger); text-transform: uppercase; font-size: 10px; margin-right: 4px; }
+  #cams { top: 12px; left: 12px; padding: 6px; display: flex; gap: 4px; flex-wrap: wrap; max-width: calc(100% - 370px); }
+  #cams button, #layers button, #controls button { background: transparent; border: 1px solid var(--line); color: var(--text);
+    border-radius: 6px; padding: 5px 9px; cursor: pointer; font: inherit; font-size: 12px; }
+  #cams button.on, #layers button.on { background: var(--blue); border-color: var(--blue); color: #000; font-weight: 600; }
+  #layers { top: 56px; left: 12px; padding: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+  #player { left: 12px; top: 100px; padding: 10px 12px; width: 230px; display: none; }
+  #player b { font-size: 14px; }
+  #bottom { left: 12px; right: 12px; bottom: 12px; padding: 10px 14px; }
+  #controls { display: flex; align-items: center; gap: 8px; }
+  #controls button.play { width: 38px; font-size: 15px; }
+  #time { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 92px; text-align: right; }
+  #scrubwrap { position: relative; flex: 1; }
+  #scrub { width: 100%; accent-color: var(--accent); }
+  #marks { position: absolute; left: 0; right: 0; top: -12px; height: 12px; pointer-events: none; }
+  #marks span { position: absolute; transform: translateX(-50%); font-size: 9px; color: var(--muted); white-space: nowrap; }
+  #chart { width: 100%; height: 70px; display: block; margin-top: 6px; }
+  .legend { display: flex; gap: 14px; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .legend i { display: inline-block; width: 10px; height: 3px; vertical-align: middle; margin-right: 4px; }
+  #loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 15px; pointer-events: none; }
+  #leadersBtn { margin-top: 6px; }
+  #leaders { position: absolute; inset: 40px; display: none; padding: 18px 22px; overflow-y: auto; z-index: 5; background: var(--panel-solid); }
+  #leaders table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  #leaders td, #leaders th { padding: 4px 8px; border-bottom: 1px solid #21262d; text-align: left; }
+  #leaders .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  #simzone { position: absolute; top: 50%; height: 10px; transform: translateY(-50%); pointer-events: none; border-radius: 3px;
+    background: repeating-linear-gradient(45deg, #c084fc66 0 4px, transparent 4px 8px); border: 1px solid #c084fc; }
+  #marks span.sim { color: #c084fc; font-weight: 700; }
+  #time.sim { color: #c084fc; font-weight: 700; }
+  #simBadge { top: 100px; left: calc(50% - 170px); transform: translateX(-50%); padding: 7px 14px; display: none; border-color: #c084fc;
+    color: #e9d5ff; background: #2e1065dd; font-weight: 600; white-space: nowrap; }
+  .simbox { margin-top: 10px; border: 1px dashed #c084fc; border-radius: 8px; padding: 8px 10px; background: #c084fc0d; }
+  .simhead { color: #c084fc; font-weight: 800; font-size: 12px; margin-bottom: 4px; }
+  .simhead span { font-size: 9.5px; background: #c084fc; color: #000; border-radius: 3px; padding: 1px 5px; margin-left: 4px; vertical-align: middle; }
+  .simrow { display: grid; grid-template-columns: 1fr auto; font-size: 12px; margin: 3px 0; }
+  .simrow i { grid-column: 1 / -1; font-style: normal; font-size: 10px; color: #c084fc; }
+  kbd { background: #30363d; border-radius: 3px; padding: 0 4px; font-size: 10px; }
+  @media (max-width: 800px) { #app { grid-template-columns: 1fr; grid-template-rows: 40% 60%; } #info { display: none; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <header>
+      <h1>Pocket<span>Replay</span> 3D</h1>
+      <div class="sub">Revue 3D de la protection de passe · NFL 2021 sem. 1–8</div>
+      <button class="chip" id="leadersBtn">Classements (Pocket Clock)</button>
+    </header>
+    <div class="filters">
+      <input type="search" id="q" placeholder="Rechercher (joueur, description…)">
+      <div class="row">
+        <select id="team"><option value="">Toutes les équipes</option></select>
+        <select id="side"><option value="any">Attaque ou défense</option><option value="off">En attaque</option><option value="def">En défense</option></select>
+      </div>
+      <select id="game"><option value="">Tous les matchs</option></select>
+      <div class="chips" id="tags"></div>
+      <div id="count"></div>
+    </div>
+    <div id="list"></div>
+  </aside>
+  <main>
+    <canvas id="gl"></canvas>
+    <div id="loading">Chargement des données…</div>
+    <div class="overlay" id="cams"></div>
+    <div class="overlay" id="layers"></div>
+    <div class="overlay" id="player"></div>
+    <div class="overlay" id="simBadge">⚙ CALCULÉ · hors tracking (description + résultat officiel)</div>
+    <div class="overlay" id="info"></div>
+    <div class="overlay" id="leaders"></div>
+    <div class="overlay" id="bottom">
+      <div id="controls">
+        <button class="play" id="playBtn" title="Lecture / pause (espace)">▶</button>
+        <button id="restart" title="Revenir au snap">⟲ Snap</button>
+        <select id="speed" style="width:auto"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+        <div id="scrubwrap"><div id="marks"></div><div id="simzone"></div><input type="range" id="scrub" min="0" max="1" step="0.01" value="0"></div>
+        <div id="time">0.0 s</div>
+      </div>
+      <canvas id="chart"></canvas>
+      <div class="legend">
+        <span><i style="background:#f85149"></i>Distance rusher le plus proche ↔ QB (yd)</span>
+        <span><i style="background:#58a6ff"></i>Surface de la poche (yd²)</span>
+        <span><i style="background:#8b949e"></i>Seuil de pression 2 yd</span>
+        <span style="color:#c084fc">▨ Calculé (hors tracking)</span>
+        <span style="margin-left:auto"><kbd>espace</kbd> lecture · <kbd>←</kbd><kbd>→</kbd> image · clic = sélectionner un joueur</span>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
