@@ -1,5 +1,13 @@
 # PocketReplay 3D
 
+## 👉 [Ouvrir la démo en ligne](https://molinaalexandre.github.io/NFLDAYS/)
+
+**Rien à installer : ouvrez simplement [https://molinaalexandre.github.io/NFLDAYS/](https://molinaalexandre.github.io/NFLDAYS/) dans Chrome, Firefox ou Edge.**
+
+- Moment fort : [un sack revu « dans les yeux du QB »](https://molinaalexandre.github.io/NFLDAYS/#g=2021091200&p=2631&cam=qb&t=2.8)
+- Cliquez sur une action dans la liste de gauche, changez de caméra en haut, et cliquez sur un joueur pour le suivre.
+
+
 **Ce qu'on a construit :** un outil de revue vidéo 3D dans le navigateur qui recrée chaque dropback de la saison NFL 2021 (semaines 1 à 8, 8 557 actions) à partir du tracking à 10 Hz. On peut rejouer, ralentir et changer d'angle : vue TV, All-22, vue défense, vue du dessus, caméra qui suit un joueur, et surtout **« Yeux du QB »**, en première personne. Un pipeline Python repère automatiquement les faits de jeu (sacks, hits, hurries, bloqueurs battus, passes rapides…) pour que le coach clique dessus et revoie l'action. Il calcule aussi une nouvelle métrique, le **Pocket Clock** : le temps entre le snap et l'arrivée du premier rusher à moins de 2 yards du QB, accompagné de la courbe de la surface de la poche.
 
 **Ce que ça révèle :** on voit à quel moment la poche s'effondre, quel bloqueur a cédé et face à qui, et si le QB a lâché le ballon avant ou après la pression (la « marge du QB »). Le classement agrège ces données par rusher, par bloqueur et par équipe.
