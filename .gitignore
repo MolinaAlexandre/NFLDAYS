@@ -4,3 +4,5 @@ nfl-big-data-bowl-regional-event-data/
 app/web/data/
 __pycache__/
 .DS_Store
+# raw dataset copied locally (~825 MB)
+app/data/
